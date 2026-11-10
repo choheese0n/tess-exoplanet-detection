@@ -1,0 +1,11 @@
+# TESS 외계행성 탐지 프로젝트 - 핵심 라이브러리
+# 설치: pip install -r requirements.txt
+
+lightkurve        # TESS/Kepler light curve 다운로드 & 처리 (핵심)
+numpy             # 수치 계산
+pandas            # 표/데이터 처리
+matplotlib        # 그래프 시각화
+astropy           # 천문 데이터(FITS) 처리
+scipy             # 신호처리 / 통계
+scikit-learn      # 머신러닝 (후반 단계)
+jupyter           # 실험용 노트북 (선택)
