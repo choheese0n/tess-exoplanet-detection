@@ -21,11 +21,15 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sklearn.ensemble import RandomForestClassifier
 import uvicorn
 
-OUTPUT_DIR = Path(__file__).resolve().parent.parent / "outputs"
+BASE_DIR = Path(__file__).resolve().parent.parent
+OUTPUT_DIR = BASE_DIR / "outputs"
+WEB_DIR = BASE_DIR / "web"
 FEATURES = ["depth", "duration", "log_power"]
 
 # ---------------------------------------------------------------
@@ -75,11 +79,24 @@ class StarFeatures(BaseModel):
     bls_power: float    # BLS 신호 세기 (예: 500)
 
 
+# 그래프 이미지(outputs 폴더)를 /outputs/... 주소로 열어줌 (대시보드가 사용)
+app.mount("/outputs", StaticFiles(directory=OUTPUT_DIR), name="outputs")
+
+
 # ---- 엔드포인트들 ----
 @app.get("/")
 def root():
+    """Step 7 웹 대시보드 페이지를 보여줍니다."""
+    index = WEB_DIR / "index.html"
+    if index.exists():
+        return FileResponse(index)
+    return {"message": "대시보드(web/index.html)를 찾지 못했습니다. /docs 를 이용하세요."}
+
+
+@app.get("/api")
+def api_info():
     return {
-        "message": "TESS 외계행성 탐지 API에 오신 걸 환영합니다 🪐",
+        "message": "TESS 외계행성 탐지 API 🪐",
         "try": ["/stars", "/stars/WASP-18", "/predict (POST)", "/docs (테스트 화면)"],
     }
 
@@ -128,6 +145,8 @@ def predict(features: StarFeatures):
 
 
 if __name__ == "__main__":
-    print("서버를 시작합니다. 브라우저에서 http://127.0.0.1:8000/docs 를 열어보세요.")
+    print("서버를 시작합니다.")
+    print("  대시보드 → http://127.0.0.1:8000/")
+    print("  API 테스트 → http://127.0.0.1:8000/docs")
     print("(끄려면 이 창에서 Ctrl + C)")
     uvicorn.run(app, host="127.0.0.1", port=8000)

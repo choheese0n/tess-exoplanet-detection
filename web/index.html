@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TESS 외계행성 탐지 대시보드</title>
+<style>
+  :root {
+    color-scheme: light;
+    --plane:          #f9f9f7;
+    --surface:        #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --muted:          #898781;
+    --series-1:       #2a78d6;
+    --track:          #e1e0d9;
+    --good:           #0ca30c;
+    --border:         rgba(11,11,11,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --plane:          #0d0d0d;
+      --surface:        #1a1a19;
+      --text-primary:   #f0efec;
+      --text-secondary: #c3c2b7;
+      --muted:          #898781;
+      --series-1:       #3987e5;
+      --track:          #2c2c2a;
+      --good:           #0ca30c;
+      --border:         rgba(255,255,255,0.10);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--plane);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 16px 64px; }
+
+  header h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  header p  { color: var(--text-secondary); margin: 0; }
+
+  .tiles { display: flex; gap: 12px; flex-wrap: wrap; margin: 28px 0; }
+  .tile {
+    flex: 1 1 160px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 18px;
+  }
+  .tile .num { font-size: 2rem; font-weight: 700; }
+  .tile .lbl { color: var(--text-secondary); font-size: 0.9rem; }
+
+  section { margin-top: 36px; }
+  section h2 { font-size: 1.15rem; margin: 0 0 4px; }
+  section .hint { color: var(--text-secondary); font-size: 0.9rem; margin: 0 0 16px; }
+
+  /* 가로 막대 차트 */
+  .bar-row { display: grid; grid-template-columns: 110px 1fr 52px; align-items: center;
+             gap: 12px; padding: 7px 0; }
+  .bar-name { font-size: 0.92rem; font-weight: 600; white-space: nowrap;
+              overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { background: var(--track); border-radius: 5px; height: 18px; position: relative; }
+  .bar-fill  { background: var(--series-1); height: 100%; border-radius: 5px; min-width: 3px;
+               transition: width .6s ease; }
+  .bar-val { text-align: right; font-variant-numeric: tabular-nums;
+             font-size: 0.9rem; font-weight: 600; }
+
+  /* 표 */
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { padding: 9px 10px; text-align: right; border-bottom: 1px solid var(--border);
+           font-variant-numeric: tabular-nums; }
+  th:first-child, td:first-child { text-align: left; font-variant-numeric: normal; }
+  thead th { color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--track); }
+  .badge { display: inline-flex; align-items: center; gap: 4px; color: var(--good);
+           font-weight: 600; font-variant-numeric: normal; }
+
+  .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+             gap: 16px; }
+  figure { margin: 0; background: var(--surface); border: 1px solid var(--border);
+           border-radius: 12px; padding: 12px; }
+  figure img { width: 100%; height: auto; border-radius: 6px; display: block; }
+  figcaption { color: var(--text-secondary); font-size: 0.85rem; margin-top: 8px; }
+
+  footer { margin-top: 48px; color: var(--muted); font-size: 0.82rem; text-align: center; }
+  .loading { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🪐 TESS 외계행성 탐지 대시보드</h1>
+    <p>NASA TESS 광도 데이터에서 Transit을 찾아 머신러닝으로 외계행성 여부를 분류한 결과</p>
+  </header>
+
+  <div class="tiles">
+    <div class="tile"><div class="num" id="t-count">–</div><div class="lbl">분석한 별</div></div>
+    <div class="tile"><div class="num" id="t-cand">–</div><div class="lbl">행성 후보</div></div>
+    <div class="tile"><div class="num" id="t-top">–</div><div class="lbl">최고 확률 별</div></div>
+  </div>
+
+  <section>
+    <h2>행성일 확률</h2>
+    <p class="hint">막대가 길수록 외계행성일 가능성이 높아요 (머신러닝 모델 예측).</p>
+    <div id="bars"><p class="loading">불러오는 중…</p></div>
+  </section>
+
+  <section>
+    <h2>별별 상세 특징</h2>
+    <p class="hint">BLS로 찾은 주기·깊이·신호세기와 모델 예측.</p>
+    <table>
+      <thead>
+        <tr><th>별</th><th>주기(일)</th><th>깊이</th><th>신호세기(BLS)</th><th>행성 확률</th><th>판정</th></tr>
+      </thead>
+      <tbody id="tbody"><tr><td colspan="6" class="loading">불러오는 중…</td></tr></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>시각화 자료</h2>
+    <p class="hint">파이프라인이 만든 그래프들.</p>
+    <div class="gallery">
+      <figure>
+        <img src="/outputs/pi_men_folded.png" alt="Pi Mensae folded light curve" loading="lazy">
+        <figcaption>Pi Mensae를 6.27일 주기로 접은 그래프 — 가운데 U자가 Transit.</figcaption>
+      </figure>
+      <figure>
+        <img src="/outputs/pi_men_bls_periodogram.png" alt="BLS periodogram" loading="lazy">
+        <figcaption>BLS 주기 스펙트럼 — 가장 높은 봉우리가 찾은 주기.</figcaption>
+      </figure>
+      <figure>
+        <img src="/outputs/ml_feature_space.png" alt="ML feature space" loading="lazy">
+        <figcaption>특징 공간 — 빨간 별(진짜 TESS 별)이 행성 영역에 위치.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <footer>TESS Exoplanet Detection · 데이터: NASA TESS (lightkurve) · 모델: scikit-learn Random Forest</footer>
+</div>
+
+<script>
+function fmtDepth(d) { return (d * 100).toFixed(3) + "%"; }
+function fmtPower(p) { return Math.round(p).toLocaleString(); }
+
+async function load() {
+  let data;
+  try {
+    const res = await fetch("/stars");
+    data = await res.json();
+  } catch (e) {
+    document.getElementById("bars").innerHTML =
+      '<p class="loading">API를 불러오지 못했어요. 서버(06_api.py)가 켜져 있나요?</p>';
+    return;
+  }
+
+  const stars = data.stars.slice().sort((a, b) => b.planet_probability - a.planet_probability);
+  const candidates = stars.filter(s => s.planet_probability >= 0.5);
+
+  // 상단 타일
+  document.getElementById("t-count").textContent = stars.length;
+  document.getElementById("t-cand").textContent = candidates.length;
+  document.getElementById("t-top").textContent = stars[0] ? stars[0].target : "–";
+
+  // 막대 차트 (단일 계열이라 범례 없이 값 직접 표기)
+  const bars = stars.map(s => {
+    const pct = (s.planet_probability * 100).toFixed(0);
+    const title = `${s.target}: 행성 확률 ${pct}% · 주기 ${s.best_period}일 · 신호 ${fmtPower(s.bls_power)}`;
+    return `<div class="bar-row" title="${title}">
+      <div class="bar-name">${s.target}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+      <div class="bar-val">${pct}%</div>
+    </div>`;
+  }).join("");
+  document.getElementById("bars").innerHTML = bars;
+
+  // 표
+  const rows = stars.map(s => {
+    const pct = (s.planet_probability * 100).toFixed(1);
+    const badge = s.planet_probability >= 0.5
+      ? '<span class="badge">✔ 행성 후보</span>'
+      : '<span style="color:var(--muted)">아님</span>';
+    return `<tr>
+      <td>${s.target}</td>
+      <td>${s.best_period.toFixed(2)}</td>
+      <td>${fmtDepth(s.depth)}</td>
+      <td>${fmtPower(s.bls_power)}</td>
+      <td>${pct}%</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join("");
+  document.getElementById("tbody").innerHTML = rows;
+}
+load();
+</script>
+</body>
+</html>
