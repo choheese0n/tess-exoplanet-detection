@@ -9,3 +9,5 @@ astropy           # 천문 데이터(FITS) 처리
 scipy             # 신호처리 / 통계
 scikit-learn      # 머신러닝 (후반 단계)
 jupyter           # 실험용 노트북 (선택)
+fastapi           # 결과를 웹 API로 제공 (Step 6)
+uvicorn           # FastAPI 실행용 웹 서버 (Step 6)
