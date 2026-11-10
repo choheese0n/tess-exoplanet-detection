@@ -191,9 +191,16 @@ tess-exoplanet-detection/
 ├── README.md              ← 이 문서 (프로젝트 가이드)
 ├── requirements.txt       ← 설치할 라이브러리 목록
 ├── .gitignore             ← GitHub에 안 올릴 파일 목록
-├── src/                   ← 실행 코드
-│   └── 01_download_lightcurve.py
-├── outputs/               ← 생성된 그래프/결과물
+├── src/                   ← 실행 코드 (단계별)
+│   ├── 01_download_lightcurve.py   ← Step 1: 데이터 받아 그리기
+│   ├── 02_flatten_lightcurve.py    ← Step 2: flatten 전처리
+│   ├── 03_find_period_bls.py       ← Step 3: BLS 주기 탐색
+│   ├── 04_extract_features.py      ← Step 4: 특징 추출 → CSV
+│   ├── 05_train_classifier.py      ← Step 5: 머신러닝 분류
+│   └── 06_api.py                   ← Step 6+7: FastAPI + 웹 대시보드
+├── web/                   ← 웹 대시보드 프런트엔드
+│   └── index.html
+├── outputs/               ← 생성된 그래프/CSV 결과물
 └── data/                  ← 다운로드한 원본 데이터 (git 제외)
 ```
 
@@ -201,15 +208,17 @@ tess-exoplanet-detection/
 
 ## 🧭 7. 앞으로의 로드맵 (단계별)
 
-| 단계 | 할 일 | 핵심 개념 |
-|---|---|---|
-| ✅ **Step 1** | 환경 세팅 + 데이터 1개 받아 그리기 | lightkurve, light curve |
-| **Step 2** | 전처리 — 노이즈/트렌드 제거 (`flatten`) | 신호처리 기초 |
-| **Step 3** | Transit 주기 찾기 (BLS 알고리즘) | 주기 탐색, folding |
-| **Step 4** | 여러 별 데이터 모으기 + 특징 추출 | Feature Engineering |
-| **Step 5** | 머신러닝으로 "행성 후보 vs 아님" 분류 | scikit-learn |
-| **Step 6** | 결과를 FastAPI로 제공 | API 개발 |
-| **Step 7** | 웹에서 그래프로 시각화 | 데이터 시각화 |
+| 단계 | 할 일 | 핵심 개념 | 코드 | 결과물 |
+|---|---|---|---|---|
+| ✅ **Step 1** | 환경 세팅 + 데이터 1개 받아 그리기 | lightkurve, light curve | `src/01_download_lightcurve.py` | `outputs/pi_men_lightcurve.png` |
+| ✅ **Step 2** | 전처리 — 노이즈/트렌드 제거 (`flatten`) | 신호처리 기초 | `src/02_flatten_lightcurve.py` | `outputs/pi_men_flatten.png` |
+| ✅ **Step 3** | Transit 주기 찾기 (BLS 알고리즘) | 주기 탐색, folding | `src/03_find_period_bls.py` | `outputs/pi_men_folded.png`, `outputs/pi_men_bls_periodogram.png` |
+| ✅ **Step 4** | 여러 별 데이터 모으기 + 특징 추출 | Feature Engineering | `src/04_extract_features.py` | `outputs/features.csv` |
+| ✅ **Step 5** | 머신러닝으로 "행성 후보 vs 아님" 분류 | scikit-learn | `src/05_train_classifier.py` | `outputs/predictions.csv`, `outputs/ml_feature_space.png` |
+| ✅ **Step 6** | 결과를 FastAPI로 제공 | API 개발 | `src/06_api.py` | `/stars`, `/predict`, `/docs` |
+| ✅ **Step 7** | 웹에서 그래프로 시각화 | 데이터 시각화 | `src/06_api.py` + `web/index.html` | `http://127.0.0.1:8000/` 대시보드 |
+
+**🎉 로드맵 7단계 전체 완주!** NASA 광도 데이터 → 신호처리 → 특징공학 → 머신러닝 → API → 웹 시각화까지 이어지는 엔드투엔드 파이프라인이 완성되었습니다.
 
 각 단계가 끝날 때마다 `git commit` + `git push` 로 GitHub에 쌓으면 그대로 포트폴리오가 됩니다.
 
@@ -221,4 +230,17 @@ tess-exoplanet-detection/
 - 그래프 창이 안 뜸 → `outputs\` 폴더의 `.png` 파일을 직접 열어보세요
 - 다운로드가 느림/실패 → 잠시 후 재시도 (NASA 서버 혼잡일 수 있음)
 
-**지금 할 일: 위 1 → 2 → 3 → 4 순서대로 진행하고, 4번(첫 그래프)이 뜨면 알려주세요. 그때 Step 2(전처리)로 넘어갑니다.**
+## ▶️ 실행 순서 요약
+
+환경 세팅(1~3) 후, 아래를 순서대로 실행하면 전체 파이프라인이 재현됩니다.
+
+```powershell
+python src\01_download_lightcurve.py   # Step 1: 데이터 받아 그리기
+python src\02_flatten_lightcurve.py    # Step 2: flatten 전처리
+python src\03_find_period_bls.py       # Step 3: BLS 주기 탐색 → Transit 확인
+python src\04_extract_features.py      # Step 4: 별 여러 개 특징 추출 → features.csv
+python src\05_train_classifier.py      # Step 5: 머신러닝 분류 → predictions.csv
+python src\06_api.py                   # Step 6+7: 서버 실행 후 http://127.0.0.1:8000/ 접속
+```
+
+> **🎉 프로젝트 완성!** 더 해보고 싶다면: `04_extract_features.py`의 `TARGETS` 목록에 원하는 별을 추가하거나, `web/index.html` 디자인을 바꿔 포트폴리오를 꾸며보세요.
