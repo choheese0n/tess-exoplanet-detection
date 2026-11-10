@@ -196,7 +196,8 @@ tess-exoplanet-detection/
 │   ├── 02_flatten_lightcurve.py    ← Step 2: flatten 전처리
 │   ├── 03_find_period_bls.py       ← Step 3: BLS 주기 탐색
 │   ├── 04_extract_features.py      ← Step 4: 특징 추출 → CSV
-│   ├── 05_train_classifier.py      ← Step 5: 머신러닝 분류
+│   ├── 05_train_classifier.py      ← Step 5: 머신러닝 분류 (시뮬레이션 라벨)
+│   ├── 05b_train_classifier_toi.py ← Step 5+: 진짜 라벨(NASA TOI) 분류
 │   └── 06_api.py                   ← Step 6+7: FastAPI + 웹 대시보드
 ├── web/                   ← 웹 대시보드 프런트엔드
 │   └── index.html
@@ -214,13 +215,24 @@ tess-exoplanet-detection/
 | ✅ **Step 2** | 전처리 — 노이즈/트렌드 제거 (`flatten`) | 신호처리 기초 | `src/02_flatten_lightcurve.py` | `outputs/pi_men_flatten.png` |
 | ✅ **Step 3** | Transit 주기 찾기 (BLS 알고리즘) | 주기 탐색, folding | `src/03_find_period_bls.py` | `outputs/pi_men_folded.png`, `outputs/pi_men_bls_periodogram.png` |
 | ✅ **Step 4** | 여러 별 데이터 모으기 + 특징 추출 | Feature Engineering | `src/04_extract_features.py` | `outputs/features.csv` |
-| ✅ **Step 5** | 머신러닝으로 "행성 후보 vs 아님" 분류 | scikit-learn | `src/05_train_classifier.py` | `outputs/predictions.csv`, `outputs/ml_feature_space.png` |
+| ✅ **Step 5** | 머신러닝으로 "행성 후보 vs 아님" 분류 (개념 학습) | scikit-learn | `src/05_train_classifier.py` | `outputs/predictions.csv`, `outputs/ml_feature_space.png` |
+| ✅ **Step 5+** | **진짜 라벨(NASA TOI)로 "확정행성 vs 가짜신호" 분류** | 실데이터 검증 | `src/05b_train_classifier_toi.py` | `outputs/toi_labeled.csv`, `outputs/toi_feature_importance.png` |
 | ✅ **Step 6** | 결과를 FastAPI로 제공 | API 개발 | `src/06_api.py` | `/stars`, `/predict`, `/docs` |
 | ✅ **Step 7** | 웹에서 그래프로 시각화 | 데이터 시각화 | `src/06_api.py` + `web/index.html` | `http://127.0.0.1:8000/` 대시보드 |
 
 **🎉 로드맵 7단계 전체 완주!** NASA 광도 데이터 → 신호처리 → 특징공학 → 머신러닝 → API → 웹 시각화까지 이어지는 엔드투엔드 파이프라인이 완성되었습니다.
 
 각 단계가 끝날 때마다 `git commit` + `git push` 로 GitHub에 쌓으면 그대로 포트폴리오가 됩니다.
+
+### 🔬 Step 5+ — 시뮬레이션에서 진짜 데이터로
+
+머신러닝 분류는 두 단계로 발전시켰습니다.
+
+1. **개념 학습 (`05_train_classifier.py`)** — 정답 라벨이 수백 개 필요하지만 실제 광도곡선을 그만큼 받는 건 비현실적이라, Step 4에서 관찰한 패턴(행성일수록 신호·깊이가 큼)을 흉내 낸 **시뮬레이션 라벨**로 ML 파이프라인 전체(학습·검증·예측·시각화)를 익혔습니다. (테스트 정확도 ≈ 95%)
+2. **실데이터 검증 (`05b_train_classifier_toi.py`)** — **NASA Exoplanet Archive의 TOI 카탈로그**(공개 오픈 데이터)에서 과학자들이 판정한 **진짜 라벨**을 받아, `CP`/`KP`(확정 행성) vs `FP`/`FA`(가짜신호)를 분류했습니다. 약 2,600개(행성 ≈ 1,400 / 가짜신호 ≈ 1,270)로 학습했고 **테스트 정확도 ≈ 80%**.
+   - 가장 중요한 특징은 **행성 반지름**이었습니다. 가짜신호(대부분 쌍성)는 행성으로 가정하면 반지름이 비정상적으로 크게 계산되는데, 모델이 이 패턴을 스스로 학습해 실제 천문학자의 판별법을 재현했습니다.
+
+> 💡 시뮬레이션의 95%보다 실데이터의 80%가 **더 의미 있는** 점수입니다. 실제 천체 데이터는 지저분하고 애매한 경우가 많으며, 이 격차 자체가 "깨끗한 가짜 데이터 vs 현실 데이터"의 차이를 보여줍니다.
 
 ---
 
@@ -239,7 +251,8 @@ python src\01_download_lightcurve.py   # Step 1: 데이터 받아 그리기
 python src\02_flatten_lightcurve.py    # Step 2: flatten 전처리
 python src\03_find_period_bls.py       # Step 3: BLS 주기 탐색 → Transit 확인
 python src\04_extract_features.py      # Step 4: 별 여러 개 특징 추출 → features.csv
-python src\05_train_classifier.py      # Step 5: 머신러닝 분류 → predictions.csv
+python src\05_train_classifier.py      # Step 5: 머신러닝 분류(시뮬레이션) → predictions.csv
+python src\05b_train_classifier_toi.py # Step 5+: 진짜 라벨(NASA TOI)로 분류 → toi_labeled.csv
 python src\06_api.py                   # Step 6+7: 서버 실행 후 http://127.0.0.1:8000/ 접속
 ```
 
